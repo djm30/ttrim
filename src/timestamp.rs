@@ -1,6 +1,6 @@
 use regex::Regex;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Timestamp {
     Start,
     End,
@@ -8,7 +8,7 @@ pub enum Timestamp {
     Percentage(i32),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TimestampError {
     PercentageOutOfRange(String),
     InvalidTime,
@@ -77,11 +77,11 @@ impl TimestampRegex {
     }
 
     fn get_seconds_regex() -> Regex {
-        Regex::new(r"^(\d{1,3})%$").unwrap()
+        Regex::new(r"^(\d{1,9})$").unwrap()
     }
 
     fn get_percentage_regex() -> Regex {
-        Regex::new(r"^(\d{1,9}%)").unwrap()
+        Regex::new(r"^(\d{1,3})%").unwrap()
     }
 
     fn match_hh_mm_ss(timestamp: &str) -> bool {
@@ -102,7 +102,139 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_something() {
-        todo!();
+    fn parse_seconds_works_with_valid_input() {
+        let test_timestamp = "120";
+        let expected = Ok(Timestamp::Seconds(120));
+        let result = Timestamp::parse_seconds(test_timestamp);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_seconds_fails_with_invalid_input() {
+        let test_timestamp = "12asdf";
+        let expected = Err(TimestampError::NoMatch);
+        let result = Timestamp::parse_seconds(test_timestamp);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_percentage_works_with_valid_input() {
+        let test_timestamp = "50%";
+        let result = Timestamp::parse_percentage(test_timestamp);
+        let expected = Ok(Timestamp::Percentage(50));
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_percentage_fails_with_percentage_lower_than_0() {
+        let test_timestamp = "-2%";
+        let result = Timestamp::parse_percentage(test_timestamp);
+        let expected = Err(TimestampError::NoMatch);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_percentage_fails_with_percentage_higher_than_100() {
+        let test_timestamp = "101%";
+        let result = Timestamp::parse_percentage(test_timestamp);
+        let expected = Err(TimestampError::PercentageOutOfRange(
+            "Percentage cannot be greater than 100%".to_owned(),
+        ));
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_percentage_fails_with_percentage_longer_than_3_digits() {
+        let test_timestamp = "1101%";
+        let result = Timestamp::parse_percentage(test_timestamp);
+        let expected = Err(TimestampError::NoMatch);
+        assert_eq!(result, expected);
+    }
+
+    fn hh_mm_ss_to_seconds(hours: i32, minutes: i32, seconds: i32) -> i32 {
+        hours * 60 * 60 + minutes * 60 + seconds
+    }
+
+    #[test]
+    fn parse_hh_mm_ss_works_with_valid_input_with_hours() {
+        let test_timestamp = "1:23:45";
+        let expected_seconds = hh_mm_ss_to_seconds(1, 23, 45);
+        let result = Timestamp::parse_hh_mm_ss(test_timestamp);
+        let expected = Ok(Timestamp::Seconds(expected_seconds));
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_hh_mm_ss_works_with_valid_input_without_hours() {
+        let test_timestamp = "23:45";
+        let expected_seconds = hh_mm_ss_to_seconds(0, 23, 45);
+        let result = Timestamp::parse_hh_mm_ss(test_timestamp);
+        let expected = Ok(Timestamp::Seconds(expected_seconds));
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_hh_mm_ss_fails_with_invalid_minutes() {
+        let test_timestamp = "60:45";
+        let result = Timestamp::parse_hh_mm_ss(test_timestamp);
+        let expected = Err(TimestampError::InvalidTime);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_hh_mm_ss_fails_with_invalid_seconds() {
+        let test_timestamp = "45:60";
+        let result = Timestamp::parse_hh_mm_ss(test_timestamp);
+        let expected = Err(TimestampError::InvalidTime);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_timestamp_works_with_valid_seconds() {
+        let test_timestamp = "120";
+        let expected = Ok(Timestamp::Seconds(120));
+        let result = Timestamp::parse_timestamp(test_timestamp);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_timestamp_allows_up_to_nine_digits() {
+        let test_timestamp = "123456789";
+        let expected = Ok(Timestamp::Seconds(123456789));
+        let result = Timestamp::parse_timestamp(test_timestamp);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_timestamp_wont_allow_seconds_over_nine_digits() {
+        let test_timestamp = "1234567891";
+        let expected = Err(TimestampError::NoMatch);
+        let result = Timestamp::parse_timestamp(test_timestamp);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_timestamp_works_with_valid_percentage() {
+        let test_timestamp = "100%";
+        let expected = Ok(Timestamp::Percentage(100));
+        let result = Timestamp::parse_timestamp(test_timestamp);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_timestamp_works_with_hh_mm_ss() {
+        let test_timestamp = "1:24";
+        let expected_seconds = hh_mm_ss_to_seconds(0, 1, 24);
+        let expected = Ok(Timestamp::Seconds(expected_seconds));
+        let result = Timestamp::parse_timestamp(test_timestamp);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_timestamp_fails_with_invalid_input() {
+        let test_timestamp = "dsaf123:23:213%";
+        let expected = Err(TimestampError::NoMatch);
+        let result = Timestamp::parse_timestamp(test_timestamp);
+        assert_eq!(result, expected);
     }
 }
