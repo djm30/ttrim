@@ -4,7 +4,7 @@ use regex::Regex;
 pub enum Timestamp {
     Start,
     End,
-    Seconds(i32),
+    Seconds(f64),
     Percentage(i32),
 }
 
@@ -25,21 +25,21 @@ impl Timestamp {
         }
     }
 
-    pub fn to_seconds(&self, video_length: i32) -> i32 {
+    pub fn to_seconds(&self, video_length: f64) -> f64 {
         match self {
-            Timestamp::Start => 0,
+            Timestamp::Start => 0.0,
             Timestamp::End => video_length,
             Timestamp::Seconds(seconds) => *seconds,
-            Timestamp::Percentage(percentage) => (video_length * percentage) / 100,
+            Timestamp::Percentage(percentage) => (video_length * *percentage as f64) / 100.0,
         }
     }
 
-    pub fn is_before(&self, other: &Timestamp, video_length: i32) -> bool {
+    pub fn is_before(&self, other: &Timestamp, video_length: f64) -> bool {
         match self {
             Timestamp::Start => match other {
                 Timestamp::Start => false,
                 Timestamp::End => true,
-                Timestamp::Seconds(other_seconds) => *other_seconds > 0,
+                Timestamp::Seconds(other_seconds) => *other_seconds > 0.0,
                 Timestamp::Percentage(other_percent) => *other_percent > 0,
             },
             Timestamp::End => match other {
@@ -53,7 +53,7 @@ impl Timestamp {
                 Timestamp::End => true,
                 Timestamp::Percentage(other_percent) => *other_percent > *self_percent,
                 Timestamp::Seconds(other_seconds) => {
-                    let self_seconds = (video_length * self_percent) / 100;
+                    let self_seconds = (video_length * *self_percent as f64) / 100.0;
                     *other_seconds > self_seconds
                 }
             },
@@ -62,7 +62,7 @@ impl Timestamp {
                 Timestamp::Start => false,
                 Timestamp::End => *self_seconds < video_length,
                 Timestamp::Percentage(other_percent) => {
-                    let other_seconds = (video_length * other_percent) / 100;
+                    let other_seconds = (video_length * *other_percent as f64) / 100.0;
                     other_seconds > *self_seconds
                 }
                 Timestamp::Seconds(other_seconds) => other_seconds > self_seconds,
@@ -108,14 +108,14 @@ impl Timestamp {
                 ));
             }
 
-            let total_seconds = hours * 60 * 60 + minutes * 60 + seconds;
+            let total_seconds = (hours * 60 * 60 + minutes * 60 + seconds) as f64;
             return Ok(Timestamp::Seconds(total_seconds));
         }
         Err(TimestampError::NoMatch)
     }
 
     fn parse_seconds(timestamp: &str) -> Result<Timestamp, TimestampError> {
-        if let Ok(seconds) = timestamp.parse::<i32>() {
+        if let Ok(seconds) = timestamp.parse::<f64>() {
             return Ok(Timestamp::Seconds(seconds));
         }
         Err(TimestampError::NoMatch)
@@ -156,7 +156,7 @@ mod tests {
     #[test]
     fn parse_seconds_works_with_valid_input() {
         let test_timestamp = "120";
-        let expected = Ok(Timestamp::Seconds(120));
+        let expected = Ok(Timestamp::Seconds(120.0));
         let result = Timestamp::parse_seconds(test_timestamp);
         assert_eq!(result, expected);
     }
@@ -203,8 +203,8 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    fn hh_mm_ss_to_seconds(hours: i32, minutes: i32, seconds: i32) -> i32 {
-        hours * 60 * 60 + minutes * 60 + seconds
+    fn hh_mm_ss_to_seconds(hours: i32, minutes: i32, seconds: i32) -> f64 {
+        (hours * 60 * 60 + minutes * 60 + seconds) as f64
     }
 
     #[test]
@@ -248,7 +248,7 @@ mod tests {
     #[test]
     fn parse_timestamp_works_with_valid_seconds() {
         let test_timestamp = "120";
-        let expected = Ok(Timestamp::Seconds(120));
+        let expected = Ok(Timestamp::Seconds(120.0));
         let result = Timestamp::parse_timestamp(test_timestamp);
         assert_eq!(result, expected);
     }
@@ -256,7 +256,7 @@ mod tests {
     #[test]
     fn parse_timestamp_allows_up_to_nine_digits() {
         let test_timestamp = "123456789";
-        let expected = Ok(Timestamp::Seconds(123456789));
+        let expected = Ok(Timestamp::Seconds(123456789.0));
         let result = Timestamp::parse_timestamp(test_timestamp);
         assert_eq!(result, expected);
     }
@@ -300,7 +300,7 @@ mod tests {
         let start = Timestamp::Start;
         let end = Timestamp::End;
 
-        let result = start.is_before(&end, 100);
+        let result = start.is_before(&end, 100.0);
         assert_eq!(result, true);
     }
 
@@ -309,16 +309,16 @@ mod tests {
         let start = Timestamp::Start;
         let end = Timestamp::End;
 
-        let result = end.is_before(&start, 100);
+        let result = end.is_before(&start, 100.0);
         assert_eq!(result, false);
     }
 
     #[test]
     fn is_before_start_is_before_seconds() {
         let start = Timestamp::Start;
-        let seconds = Timestamp::Seconds(10);
+        let seconds = Timestamp::Seconds(10.0);
 
-        let result = start.is_before(&seconds, 100);
+        let result = start.is_before(&seconds, 100.0);
         println!("{}", result);
         assert_eq!(result, true);
     }
@@ -326,29 +326,29 @@ mod tests {
     #[test]
     fn is_before_seconds_is_not_before_start() {
         let start = Timestamp::Start;
-        let seconds = Timestamp::Seconds(10);
+        let seconds = Timestamp::Seconds(10.0);
 
-        let result = seconds.is_before(&start, 100);
+        let result = seconds.is_before(&start, 100.0);
         println!("{}", result);
         assert_eq!(result, false);
     }
 
     #[test]
     fn is_before_seconds_is_before_end() {
-        let seconds = Timestamp::Seconds(10);
+        let seconds = Timestamp::Seconds(10.0);
         let end = Timestamp::End;
 
-        let result = seconds.is_before(&end, 100);
+        let result = seconds.is_before(&end, 100.0);
         println!("{}", result);
         assert_eq!(result, true);
     }
 
     #[test]
     fn is_before_seconds_is_after_end() {
-        let seconds = Timestamp::Seconds(110);
+        let seconds = Timestamp::Seconds(101.0);
         let end = Timestamp::End;
 
-        let result = seconds.is_before(&end, 100);
+        let result = seconds.is_before(&end, 100.0);
         assert_eq!(result, false);
     }
 
@@ -357,10 +357,10 @@ mod tests {
         let percentage = Timestamp::Percentage(10);
         let start = Timestamp::Start;
 
-        let result = percentage.is_before(&start, 100);
+        let result = percentage.is_before(&start, 100.0);
         assert_eq!(result, false);
 
-        let result = start.is_before(&percentage, 100);
+        let result = start.is_before(&percentage, 100.0);
         assert_eq!(result, true);
     }
 
@@ -369,34 +369,34 @@ mod tests {
         let percentage = Timestamp::Percentage(10);
         let end = Timestamp::End;
 
-        let result = percentage.is_before(&end, 100);
+        let result = percentage.is_before(&end, 100.0);
         assert_eq!(result, true);
 
-        let result = end.is_before(&percentage, 100);
+        let result = end.is_before(&percentage, 100.0);
         assert_eq!(result, false);
     }
 
     #[test]
     fn is_before_percentage_is_before_seconds() {
         let percentage = Timestamp::Percentage(5);
-        let seconds = Timestamp::Seconds(10);
+        let seconds = Timestamp::Seconds(10.0);
 
-        let result = percentage.is_before(&seconds, 100);
+        let result = percentage.is_before(&seconds, 100.0);
         assert_eq!(result, true);
 
-        let result = seconds.is_before(&percentage, 100);
+        let result = seconds.is_before(&percentage, 100.0);
         assert_eq!(result, false);
     }
 
     #[test]
     fn is_before_seconds_is_before_percentage() {
         let percentage = Timestamp::Percentage(20);
-        let seconds = Timestamp::Seconds(10);
+        let seconds = Timestamp::Seconds(10.0);
 
-        let result = seconds.is_before(&percentage, 100);
+        let result = seconds.is_before(&percentage, 100.0);
         assert_eq!(result, true);
 
-        let result = percentage.is_before(&seconds, 100);
+        let result = percentage.is_before(&seconds, 100.0);
         assert_eq!(result, false);
     }
 }
