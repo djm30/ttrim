@@ -1,37 +1,41 @@
+mod args;
 mod timestamp;
+
 use clap::Parser;
 use mp4;
-use regex::Regex;
-use std::env;
 
+use args::Args;
 use timestamp::{Timestamp, TimestampError};
 
-#[derive(Parser, Debug, Default)]
-#[clap(author = "Dylan Morrison", version)]
-/// ttrim - Trim video files directly in the terminal
-struct Args {
-    /// The video file to be trimmed
-    target_file: String,
-    #[clap(short, long)]
-    /// The desired starting point
-    start_timestamp: Option<String>,
-    #[clap(short, long)]
-    /// The desired end point
-    end_timestamp: Option<String>,
-    #[clap(short, long)]
-    /// The output location
-    output: Option<String>,
+fn get_timestamp(arg_timestamp: Option<String>, start: bool) -> Timestamp {
+    if let Some(timestamp) = arg_timestamp {
+        match Timestamp::parse_timestamp(&timestamp) {
+            Ok(timestamp) => timestamp,
+            Err(error) => match error {
+                TimestampError::NoMatch => panic!("Please enter a valid timestamp format"),
+                TimestampError::InvalidTime(msg) => panic!("{}", msg),
+                TimestampError::PercentageOutOfRange(msg) => panic!("{}", msg),
+            },
+        }
+    } else {
+        if start {
+            Timestamp::Start
+        } else {
+            Timestamp::End
+        }
+    }
 }
 
 fn main() {
     let args = Args::parse();
     println!("{:?}", args);
-    let x = Timestamp::parse_timestamp("12:35").unwrap();
-    let y = Timestamp::parse_timestamp("10%").unwrap();
-    let z = Timestamp::parse_timestamp("43").unwrap();
-    dbg!(x);
-    dbg!(y);
-    dbg!(z);
-}
 
-// I want to focus on getting the CLI interface sorted first
+    // Steps before video trimming can proceed
+    // Verify video file exists
+    // Verify both start and end timestamps
+    // Verify video input is an mp4
+    // Verify output path doesnt already exist
+
+    let start_timestamp = get_timestamp(args.start_timestamp, true);
+    let end_timestamp = get_timestamp(args.end_timestamp, false);
+}
