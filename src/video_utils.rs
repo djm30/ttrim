@@ -15,7 +15,7 @@ fn check_program_installed(program_name: String) -> bool {
 
 // Need to make this handle errors
 pub fn get_video_length(path: &PathBuf) -> Result<f64, Error> {
-    if !check_program_installed("ffprobe".to_string()) {
+    if !check_program_installed("ffprobe".to_owned()) {
         Err(Error::FfprobeNotInstalled)?
     }
 
@@ -42,7 +42,7 @@ pub fn get_video_length(path: &PathBuf) -> Result<f64, Error> {
     };
 
     let duration_str = str::from_utf8(&output.stdout).map_err(|_| {
-        Error::InvalidData("Failed to read ffprobe output to a UTF-8 string".to_string())
+        Error::InvalidData("Failed to read ffprobe output to a UTF-8 string".to_owned())
     })?;
 
     let duration: f64 = duration_str.trim().parse().map_err(|_| {
@@ -62,7 +62,7 @@ pub fn trim_video(
     input_path: &PathBuf,
     output_path: &PathBuf,
 ) -> Result<(), Error> {
-    if !check_program_installed("ffmpeg".to_string()) {
+    if !check_program_installed("ffmpeg".to_owned()) {
         Err(Error::FfpmegNotInstalled)?
     }
 

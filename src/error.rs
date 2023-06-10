@@ -18,9 +18,9 @@ pub enum Error {
     OutputFileExists,
     #[error("An error occurred while running ffmpeg")]
     FfpmegError,
-    #[error("Ffmpeg is not installed, please install it and try again")]
+    #[error("Ffmpeg is not installed, please install it and try again. You can find details here: https://ffmpeg.org/download.html")]
     FfpmegNotInstalled,
-    #[error("Ffprobe is not installed, please install it and try again")]
+    #[error("Ffprobe is not installed, please install it and try again. You can find details here: https://ffmpeg.org/download.html")]
     FfprobeNotInstalled,
     #[error("Invalid path: {0}")]
     InvalidPath(String),
