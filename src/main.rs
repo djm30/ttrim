@@ -1,6 +1,6 @@
 mod args;
 mod timestamp;
-mod trim;
+mod video_utils;
 
 use clap::Parser;
 
@@ -28,23 +28,19 @@ fn get_timestamp(arg_timestamp: Option<String>, start: bool) -> Timestamp {
 
 fn main() {
     let args = Args::parse();
-    println!("{:?}", args);
 
-    // Steps before video trimming can proceed
-    // Verify video file exists
-    // Verify both start and end timestamps
-    // Verify video input is an mp4
-    // Verify output path doesnt already exist
-
-    println!("File exists: {}", args.target_file.exists());
     if !args.target_file.exists() {
         panic!("Specified video file doesnt exist");
+    }
+
+    if !video_utils::check_valid_file_extension(&args.target_file) {
+        panic!("Video file must be an mp4");
     }
 
     let start_timestamp = get_timestamp(args.start_timestamp, true);
     let mut end_timestamp = get_timestamp(args.end_timestamp, false);
 
-    let duration = trim::get_video_length(args.target_file);
+    let duration = video_utils::get_video_length(&args.target_file);
 
     if end_timestamp.is_before(&start_timestamp, duration) {
         panic!("Please ensure start timestamp is before end timestamp");
@@ -53,4 +49,29 @@ fn main() {
     if end_timestamp.to_seconds(duration) > duration {
         end_timestamp = Timestamp::End;
     }
+
+    // Need to validate output path
+    // Either by getting the option passed in, validatiing it or generating one
+    let output_path = if let Some(mut path) = args.output {
+        if path.exists() {
+            panic!("Output path already exists");
+        }
+        if !video_utils::check_valid_file_extension(&path) {
+            panic!("Output path must be an mp4");
+        }
+        path
+    } else {
+        video_utils::generate_filename(&args.target_file)
+    };
+
+    println!("Output Path: {:?}", output_path);
+
+    video_utils::trim_video(
+        start_timestamp.to_seconds(duration),
+        end_timestamp.to_seconds(duration),
+        &args.target_file,
+        &output_path,
+    );
+
+    println!("Done")
 }

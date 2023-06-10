@@ -7,13 +7,15 @@ use std::path;
 pub struct Args {
     /// The video file to be trimmed
     pub target_file: path::PathBuf,
-    #[clap(short, long)]
+    #[clap(short, long = "start")]
     /// The desired starting point
     pub start_timestamp: Option<String>,
-    #[clap(short, long)]
+    #[clap(short, long = "end")]
     /// The desired end point
     pub end_timestamp: Option<String>,
     #[clap(short, long)]
     /// The output location
     pub output: Option<path::PathBuf>,
 }
+
+// TODO Check ffmpeg and ffprobe are installed
