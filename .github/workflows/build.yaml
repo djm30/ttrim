@@ -1,22 +1,23 @@
-name: Build and Push to Release Branch
+name: build
 
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
-  build-and-release:
+  build:
+    name: Build and release
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-        default: true
+        override: true
 
     - name: Add targets
       run: |
@@ -27,32 +28,49 @@ jobs:
         rustup target add aarch64-apple-darwin
 
     - name: Build
-      run: |
-        cargo build --release --target=x86_64-unknown-linux-gnu --bin ttrim
-        cargo build --release --target=aarch64-unknown-linux-gnu --bin ttrim
-        cargo build --release --target=x86_64-unknown-linux-musl --bin ttrim
-        cargo build --release --target=x86_64-pc-windows-msvc --bin ttrim
-        cargo build --release --target=aarch64-apple-darwin --bin ttrim
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: true
+        command: build
+        args: --release --target=x86_64-unknown-linux-gnu
+    - name: Build
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: true
+        command: build
+        args: --release --target=aarch64-unknown-linux-gnu
+    - name: Build
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: true
+        command: build
+        args: --release --target=x86_64-unknown-linux-musl
+    - name: Build
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: true
+        command: build
+        args: --release --target=x86_64-pc-windows-msvc
+    - name: Build
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: true
+        command: build
+        args: --release --target=aarch64-apple-darwin
 
-    - name: Prepare binaries
+    - name: Push to release branch
       run: |
-        mkdir x86_64-unknown-linux-gnu
-        mkdir aarch64-unknown-linux-gnu
-        mkdir x86_64-unknown-linux-musl
-        mkdir x86_64-pc-windows-msvc
-        mkdir aarch64-apple-darwin
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git checkout -B releases
 
+        mkdir -p x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu x86_64-unknown-linux-musl x86_64-pc-windows-msvc aarch64-apple-darwin
         mv target/x86_64-unknown-linux-gnu/release/ttrim x86_64-unknown-linux-gnu/
         mv target/aarch64-unknown-linux-gnu/release/ttrim aarch64-unknown-linux-gnu/
         mv target/x86_64-unknown-linux-musl/release/ttrim x86_64-unknown-linux-musl/
         mv target/x86_64-pc-windows-msvc/release/ttrim.exe x86_64-pc-windows-msvc/
         mv target/aarch64-apple-darwin/release/ttrim aarch64-apple-darwin/
 
-    - name: Push to Release Branch
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git checkout -b releases
-        git add -A
-        git commit -m "Add new release binaries"
-        git push -u origin releases
+        git add .
+        git commit -m "Update release binaries"
+        git push -f origin releases
