@@ -1,12 +1,28 @@
+use crate::error::Error;
+
 use chrono::prelude::*;
-use std::fmt::format;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 use std::str;
 
+fn check_program_installed(program_name: String) -> bool {
+    Command::new("which")
+        .arg(program_name)
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
 // Need to make this handle errors
-pub fn get_video_length(path: &PathBuf) -> f64 {
-    let video_path = path.to_owned().into_os_string().into_string().unwrap();
+pub fn get_video_length(path: &PathBuf) -> Result<f64, Error> {
+    if !check_program_installed("ffprobe".to_string()) {
+        Err(Error::FfprobeNotInstalled)?
+    }
+
+    let video_path = path
+        .to_str()
+        .ok_or(Error::InvalidPath(path.to_string_lossy().into_owned()))?;
+
     let output = Command::new("ffprobe")
         .arg("-v")
         .arg("error")
@@ -15,22 +31,41 @@ pub fn get_video_length(path: &PathBuf) -> f64 {
         .arg("-of")
         .arg("default=noprint_wrappers=1:nokey=1")
         .arg(&video_path)
-        .output()
-        .unwrap();
+        .output();
 
-    let duration_str = str::from_utf8(&output.stdout).unwrap();
-    let duration: f64 = duration_str.trim().parse().unwrap();
+    let output = match output {
+        Ok(output) => match output.status.success() {
+            true => output,
+            false => return Err(Error::FfpmegError)?,
+        },
+        Err(_) => return Err(Error::FfpmegError)?,
+    };
 
-    // println!("Video Path: {}", video_path);
-    // println!("Error: {}", str::from_utf8(&output.stderr).unwrap());
-    // println!("Duration: {}", duration_str);
-    // println!("Duration: {}", duration);
+    let duration_str = str::from_utf8(&output.stdout).map_err(|_| {
+        Error::InvalidData("Failed to read ffprobe output to a UTF-8 string".to_string())
+    })?;
 
-    duration
+    let duration: f64 = duration_str.trim().parse().map_err(|_| {
+        Error::InvalidData(format!(
+            "Failed to parse ffprobe output as a float: {}",
+            duration_str
+        ))
+    })?;
+
+    Ok(duration)
 }
 
 // Todo: Implement this function
-pub fn trim_video(start: f64, end: f64, input_path: &PathBuf, output_path: &PathBuf) {
+pub fn trim_video(
+    start: f64,
+    end: f64,
+    input_path: &PathBuf,
+    output_path: &PathBuf,
+) -> Result<(), Error> {
+    if !check_program_installed("ffmpeg".to_string()) {
+        Err(Error::FfpmegNotInstalled)?
+    }
+
     let output = Command::new("ffmpeg")
         .arg("-i")
         .arg(input_path)
@@ -43,19 +78,38 @@ pub fn trim_video(start: f64, end: f64, input_path: &PathBuf, output_path: &Path
         .arg("-c")
         .arg("copy")
         .arg(output_path)
-        .output()
-        .unwrap();
+        .output();
 
-    println!("Error: {}", str::from_utf8(&output.stderr).unwrap());
-    println!("Output: {}", str::from_utf8(&output.stdout).unwrap());
+    match output {
+        Ok(output) => match output.status.success() {
+            true => output,
+            false => return Err(Error::FfpmegError)?,
+        },
+        Err(_) => return Err(Error::FfpmegError)?,
+    };
+
+    Ok(())
 }
 
+// TODO: More file formats are probably supported
 pub fn check_valid_file_extension(path: &PathBuf) -> bool {
-    let extension = path.extension().unwrap();
-    extension == "mp4"
+    let valid_extensions = [
+        "mp4", "avi", "mov", "wmv", "flv", "mkv", "webm", "m4v", "mpg", "mpeg", "m2v", "3gp",
+        "3g2", "m4v",
+    ];
+
+    match path.extension() {
+        Some(extension) => valid_extensions.contains(&extension.to_str().unwrap_or("")),
+        None => false,
+    }
 }
 
-pub fn generate_filename(input_path: &PathBuf) -> PathBuf {
+pub enum PathType {
+    Relative,
+    FileOnly,
+}
+
+pub fn generate_output_filename(input_path: &PathBuf, path_type: PathType) -> PathBuf {
     let mut output_path = PathBuf::new();
 
     let filestem = input_path
@@ -71,7 +125,10 @@ pub fn generate_filename(input_path: &PathBuf) -> PathBuf {
     let now = Utc::now();
     let timestamp = now.format("%Y%m%d%H%M%S");
 
-    output_path.push("./");
+    if matches!(path_type, PathType::Relative) {
+        output_path.push("./");
+    }
+
     output_path.push(format!("{}_{}_trim.{}", filestem, timestamp, extension));
     output_path
 }

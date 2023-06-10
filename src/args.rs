@@ -1,3 +1,6 @@
+use crate::error::Error;
+use crate::timestamp::Timestamp;
+
 use clap::Parser;
 use std::path;
 
@@ -18,4 +21,24 @@ pub struct Args {
     pub output: Option<path::PathBuf>,
 }
 
-// TODO Check ffmpeg and ffprobe are installed
+impl Args {
+    pub fn get_start_timestamp(&self) -> Result<Timestamp, Error> {
+        get_timestamp(self.start_timestamp.clone(), true)
+    }
+
+    pub fn get_end_timestamp(&self) -> Result<Timestamp, Error> {
+        get_timestamp(self.end_timestamp.clone(), false)
+    }
+}
+
+fn get_timestamp(arg_timestamp: Option<String>, start: bool) -> Result<Timestamp, Error> {
+    if let Some(timestamp) = arg_timestamp {
+        Timestamp::parse_timestamp(&timestamp)
+    } else {
+        if start {
+            Ok(Timestamp::Start)
+        } else {
+            Ok(Timestamp::End)
+        }
+    }
+}

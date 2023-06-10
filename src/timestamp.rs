@@ -1,3 +1,4 @@
+use crate::error::Error;
 use regex::Regex;
 
 #[derive(Debug, PartialEq)]
@@ -8,20 +9,13 @@ pub enum Timestamp {
     Percentage(i32),
 }
 
-#[derive(Debug, PartialEq)]
-pub enum TimestampError {
-    PercentageOutOfRange(String),
-    InvalidTime(String),
-    NoMatch,
-}
-
 impl Timestamp {
-    pub fn parse_timestamp(timestamp: &str) -> Result<Timestamp, TimestampError> {
+    pub fn parse_timestamp(timestamp: &str) -> Result<Timestamp, Error> {
         match timestamp {
             t if TimestampRegex::match_seconds(t) => Timestamp::parse_seconds(t),
             t if TimestampRegex::match_hh_mm_ss(t) => Timestamp::parse_hh_mm_ss(t),
             t if TimestampRegex::match_percentage(t) => Timestamp::parse_percentage(t),
-            _ => Err(TimestampError::NoMatch),
+            _ => Err(Error::NoTimestampMatch),
         }
     }
 
@@ -72,38 +66,38 @@ impl Timestamp {
 }
 
 impl Timestamp {
-    fn parse_percentage(timestamp: &str) -> Result<Timestamp, TimestampError> {
+    fn parse_percentage(timestamp: &str) -> Result<Timestamp, Error> {
         if let Some(cap) = TimestampRegex::get_percentage_regex().captures(timestamp) {
             let percentage: i32 = cap.get(1).map(|x| x.as_str().parse().unwrap()).unwrap();
             if percentage > 100 {
-                return Err(TimestampError::PercentageOutOfRange(
+                return Err(Error::PercentageOutOfRange(
                     "Percentage cannot be greater than 100%".to_owned(),
                 ));
             }
             if percentage < 0 {
-                return Err(TimestampError::PercentageOutOfRange(
+                return Err(Error::PercentageOutOfRange(
                     "Percentage cannot be lower than 0%".to_owned(),
                 ));
             }
             return Ok(Timestamp::Percentage(percentage));
         }
-        Err(TimestampError::NoMatch)
+        Err(Error::NoTimestampMatch)
     }
 
-    fn parse_hh_mm_ss(timestamp: &str) -> Result<Timestamp, TimestampError> {
+    fn parse_hh_mm_ss(timestamp: &str) -> Result<Timestamp, Error> {
         if let Some(cap) = TimestampRegex::get_hh_mm_ss_regex().captures(timestamp) {
             let hours = cap.get(1).map_or(0, |x| x.as_str().parse().unwrap());
             let minutes = cap.get(2).map_or(0, |x| x.as_str().parse().unwrap());
             let seconds = cap.get(3).map_or(0, |x| x.as_str().parse().unwrap());
 
             if minutes > 59 {
-                return Err(TimestampError::InvalidTime(
+                return Err(Error::InvalidTime(
                     "Provided value for minutes cannot be greater than 60".to_owned(),
                 ));
             }
 
             if seconds > 59 {
-                return Err(TimestampError::InvalidTime(
+                return Err(Error::InvalidTime(
                     "Provided value for seconds cannot be greater than 60".to_owned(),
                 ));
             }
@@ -111,14 +105,14 @@ impl Timestamp {
             let total_seconds = (hours * 60 * 60 + minutes * 60 + seconds) as f64;
             return Ok(Timestamp::Seconds(total_seconds));
         }
-        Err(TimestampError::NoMatch)
+        Err(Error::NoTimestampMatch)
     }
 
-    fn parse_seconds(timestamp: &str) -> Result<Timestamp, TimestampError> {
+    fn parse_seconds(timestamp: &str) -> Result<Timestamp, Error> {
         if let Ok(seconds) = timestamp.parse::<f64>() {
             return Ok(Timestamp::Seconds(seconds));
         }
-        Err(TimestampError::NoMatch)
+        Err(Error::NoTimestampMatch)
     }
 }
 
@@ -164,7 +158,7 @@ mod tests {
     #[test]
     fn parse_seconds_fails_with_invalid_input() {
         let test_timestamp = "12asdf";
-        let expected = Err(TimestampError::NoMatch);
+        let expected = Err(Error::NoTimestampMatch);
         let result = Timestamp::parse_seconds(test_timestamp);
         assert_eq!(result, expected);
     }
@@ -181,7 +175,7 @@ mod tests {
     fn parse_percentage_fails_with_percentage_lower_than_0() {
         let test_timestamp = "-2%";
         let result = Timestamp::parse_percentage(test_timestamp);
-        let expected = Err(TimestampError::NoMatch);
+        let expected = Err(Error::NoTimestampMatch);
         assert_eq!(result, expected);
     }
 
@@ -189,7 +183,7 @@ mod tests {
     fn parse_percentage_fails_with_percentage_higher_than_100() {
         let test_timestamp = "101%";
         let result = Timestamp::parse_percentage(test_timestamp);
-        let expected = Err(TimestampError::PercentageOutOfRange(
+        let expected = Err(Error::PercentageOutOfRange(
             "Percentage cannot be greater than 100%".to_owned(),
         ));
         assert_eq!(result, expected);
@@ -199,7 +193,7 @@ mod tests {
     fn parse_percentage_fails_with_percentage_longer_than_3_digits() {
         let test_timestamp = "1101%";
         let result = Timestamp::parse_percentage(test_timestamp);
-        let expected = Err(TimestampError::NoMatch);
+        let expected = Err(Error::NoTimestampMatch);
         assert_eq!(result, expected);
     }
 
@@ -229,7 +223,7 @@ mod tests {
     fn parse_hh_mm_ss_fails_with_invalid_minutes() {
         let test_timestamp = "60:45";
         let result = Timestamp::parse_hh_mm_ss(test_timestamp);
-        let expected = Err(TimestampError::InvalidTime(
+        let expected = Err(Error::InvalidTime(
             "Provided value for minutes cannot be greater than 60".to_owned(),
         ));
         assert_eq!(result, expected);
@@ -239,7 +233,7 @@ mod tests {
     fn parse_hh_mm_ss_fails_with_invalid_seconds() {
         let test_timestamp = "45:60";
         let result = Timestamp::parse_hh_mm_ss(test_timestamp);
-        let expected = Err(TimestampError::InvalidTime(
+        let expected = Err(Error::InvalidTime(
             "Provided value for seconds cannot be greater than 60".to_owned(),
         ));
         assert_eq!(result, expected);
@@ -264,7 +258,7 @@ mod tests {
     #[test]
     fn parse_timestamp_wont_allow_seconds_over_nine_digits() {
         let test_timestamp = "1234567891";
-        let expected = Err(TimestampError::NoMatch);
+        let expected = Err(Error::NoTimestampMatch);
         let result = Timestamp::parse_timestamp(test_timestamp);
         assert_eq!(result, expected);
     }
@@ -289,7 +283,7 @@ mod tests {
     #[test]
     fn parse_timestamp_fails_with_invalid_input() {
         let test_timestamp = "dsaf123:23:213%";
-        let expected = Err(TimestampError::NoMatch);
+        let expected = Err(Error::NoTimestampMatch);
         let result = Timestamp::parse_timestamp(test_timestamp);
         assert_eq!(result, expected);
     }

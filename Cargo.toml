@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 clap = {version = "4.3.2", features = ["derive"]}
 regex = "1.8.4"
-ffmpeg-next = "6.0.0"
 chrono = "0.4.26"
+thiserror = "1.0.40"

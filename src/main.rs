@@ -1,77 +1,71 @@
 mod args;
+mod error;
 mod timestamp;
 mod video_utils;
 
 use clap::Parser;
 
 use args::Args;
-use timestamp::{Timestamp, TimestampError};
+use error::Error;
+use timestamp::Timestamp;
+use video_utils::PathType;
 
-fn get_timestamp(arg_timestamp: Option<String>, start: bool) -> Timestamp {
-    if let Some(timestamp) = arg_timestamp {
-        match Timestamp::parse_timestamp(&timestamp) {
-            Ok(timestamp) => timestamp,
-            Err(error) => match error {
-                TimestampError::NoMatch => panic!("Please enter a valid timestamp format"),
-                TimestampError::InvalidTime(msg) => panic!("{}", msg),
-                TimestampError::PercentageOutOfRange(msg) => panic!("{}", msg),
-            },
-        }
-    } else {
-        if start {
-            Timestamp::Start
-        } else {
-            Timestamp::End
-        }
-    }
-}
-
-fn main() {
+fn main() -> Result<(), Error> {
     let args = Args::parse();
 
-    if !args.target_file.exists() {
-        panic!("Specified video file doesnt exist");
+    let target_file = args.target_file.clone();
+
+    if !target_file.exists() {
+        Err(Error::InputFileDoesntExist)?
     }
 
-    if !video_utils::check_valid_file_extension(&args.target_file) {
-        panic!("Video file must be an mp4");
+    if !video_utils::check_valid_file_extension(&target_file) {
+        Err(Error::InvalidExtension)?
     }
 
-    let start_timestamp = get_timestamp(args.start_timestamp, true);
-    let mut end_timestamp = get_timestamp(args.end_timestamp, false);
+    let start_timestamp = args.get_start_timestamp()?;
+    let mut end_timestamp = args.get_end_timestamp()?;
 
-    let duration = video_utils::get_video_length(&args.target_file);
+    let duration = video_utils::get_video_length(&target_file)?;
 
     if end_timestamp.is_before(&start_timestamp, duration) {
-        panic!("Please ensure start timestamp is before end timestamp");
+        Err(Error::EndTimestampBeforeStartTimestamp)?
     }
 
     if end_timestamp.to_seconds(duration) > duration {
         end_timestamp = Timestamp::End;
     }
 
-    // Need to validate output path
-    // Either by getting the option passed in, validatiing it or generating one
-    let output_path = if let Some(mut path) = args.output {
-        if path.exists() {
-            panic!("Output path already exists");
+    let output_path = match args.output {
+        Some(mut path) => {
+            if path.is_dir() {
+                path.push(video_utils::generate_output_filename(
+                    &target_file,
+                    PathType::FileOnly,
+                ))
+            }
+            if path.exists() {
+                return Err(Error::OutputFileExists);
+            }
+            if !video_utils::check_valid_file_extension(&path) {
+                return Err(Error::InvalidExtension);
+            }
+            path
         }
-        if !video_utils::check_valid_file_extension(&path) {
-            panic!("Output path must be an mp4");
-        }
-        path
-    } else {
-        video_utils::generate_filename(&args.target_file)
+        None => video_utils::generate_output_filename(&target_file, PathType::Relative),
     };
-
-    println!("Output Path: {:?}", output_path);
 
     video_utils::trim_video(
         start_timestamp.to_seconds(duration),
         end_timestamp.to_seconds(duration),
-        &args.target_file,
+        &target_file,
         &output_path,
+    )?;
+
+    println!(
+        "Successfully trimmed video. Output file: {}",
+        output_path.display()
     );
 
-    println!("Done")
+    Ok(())
 }
