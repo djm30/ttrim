@@ -42,7 +42,7 @@ Please ensure ffpmeg is installed on your system before using, installation inst
 ## Examples
 
 ```bash
-# Trim video.mp4 starting from 00:10 and will go until the end
+# Trim video.mp4 starting from 10:0p and will go until the end
 ttrim video.mp4 --start 10:00
 
 # Trim video.mp4 from the start to 00:45
