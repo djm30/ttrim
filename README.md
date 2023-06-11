@@ -37,9 +37,6 @@ Please ensure ffpmeg is installed on your system before using, installation inst
 
 - `-s`, `--start`: The desired starting point of the trimmed video. 
 - `-e`, `--end`: The desired end point of the trimmed video. This can be provided as a timestamp in the format `HH:MM:SS`, `MM:SS`, a percentage `DD%` or as a number of seconds.
-
-- `-e`, `--end`: The desired end point of the trimmed video. This can be provided as a timestamp in the format `HH:MM:SS`, `MM:SS`, a percentage `DD%` or as a number of seconds.
-
 - `-o`, `--output`: The output location for the trimmed video file. If not provided, the trimmed video will be saved in the same directory as the original video. Can be a specific file or a directory in which case a filename will be generated
 
 ## Examples
@@ -49,7 +46,7 @@ Please ensure ffpmeg is installed on your system before using, installation inst
 ttrim video.mp4 --start 10:00
 
 # Trim video.mp4 from the start to 00:45
-ttrim video.mp4 --e 45
+ttrim video.mp4 -e 45
 
 # Trim video.mp4 from 00:10 to 00:45
 ttrim video.mp4 --start 00:10:00 --end 00:45:00

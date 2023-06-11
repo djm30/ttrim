@@ -20,12 +20,18 @@ if (!(Test-Path -Path $installPath -PathType Container)) {
 # Move the binary to the installation path
 Move-Item -Path .\target\release\ttrim.exe -Destination "$installPath\ttrim.exe"
 
-# Add the installation path to the system PATH if it's not already there
-$oldPath = [System.Environment]::GetEnvironmentVariable('Path', 'User')
-if ($oldPath -notlike "*$installPath*") {
-    $newPath = $oldPath + ";" + $installPath
-    [System.Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
+# Trying to update path variable
+$existingPath = [Environment]::GetEnvironmentVariable("Path", "User")
+$folderPath = Join-Path $env:LOCALAPPDATA "ttrim"
+
+if ($existingPath -split ";" -contains $folderPath) {
+    Write-Host "Folder path already exists in the User Environment Path variable."
+    exit
 }
+
+$newPath = "$existingPath;$folderPath"
+[Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+
 
 # Go up one level in the directory structure
 cd ..
