@@ -12,7 +12,7 @@ Alternatively you can use the following commands to install:
 ### Linux / MacOS
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/djm30/ttrim/master/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/djm30/ttrim/master/install.sh | bash
 ```
 
 *requires sudo permissions to move binary into /usr/local/bin folder*

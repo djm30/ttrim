@@ -18,7 +18,7 @@ if (!(Test-Path -Path $installPath -PathType Container)) {
 }
 
 # Move the binary to the installation path
-Move-Item -Path .\target\release\ttrim.exe -Destination $installPath
+Move-Item -Path .\target\release\ttrim.exe -Destination "$installPath\ttrim.exe"
 
 # Add the installation path to the system PATH if it's not already there
 $oldPath = [System.Environment]::GetEnvironmentVariable('Path', 'User')

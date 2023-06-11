@@ -10,7 +10,7 @@ cd ttrim
 cargo build --release
 
 # Move the binary to /usr/local/bin
-mv target/release/ttrim /usr/local/bin
+sudo mv target/release/ttrim /usr/local/bin
 
 # Go up one level in the directory structure
 cd ..
