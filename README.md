@@ -3,6 +3,8 @@
 ttrim is a blazingly fast (probably not) command line utilty to quickly and easily trim video files, using ffpmeg under the hood.
 
 ## Installation
+*You must have rust installed*
+
 Installation can be achieved via cloning this repository, building using `cargo build --release` and adding the resulting binary found in `target/release/ttrim` to your path.
 
 Alternatively you can use the following commands to install:
@@ -20,7 +22,7 @@ curl -sSL https://raw.githubusercontent.com/djm30/ttrim/master/install.sh | sudo
 ```powershell
 Invoke-Expression (curl https://raw.githubusercontent.com/djm30/ttrim/master/install.ps1 -UseBasicParsing).Content
 ```
-*Must be run as an admin*
+*Must be run as an admin, this will create a ttrim folder in appdata/local and add it to your path*
 
 ## Usage
 
@@ -43,21 +45,21 @@ Please ensure ffpmeg is installed on your system before using, installation inst
 ## Examples
 
 ```bash
-# Trim video.mp4 starting from 00:10:00 to the end
+# Trim video.mp4 starting from 00:10 and will go until the end
 ttrim video.mp4 --start 10:00
 
-# Trim video.mp4 from the start to 00:45:00
+# Trim video.mp4 from the start to 00:45
 ttrim video.mp4 --e 45
 
-# Trim video.mp4 from 00:10:00 to 00:45:00
+# Trim video.mp4 from 00:10 to 00:45
 ttrim video.mp4 --start 00:10:00 --end 00:45:00
 
-# Trim video.mp4 from 00:10:00 to 00:45:00 and output to /path/to/output.mp4
+# Trim video.mp4 from 10:00 to 45:00 and output to /path/to/output.mp4
 ttrim video.mp4 --start 10:00 --end 45:00 --output /path/to/output.mp4
 
 # Trim video.mp4 to halfway through and save output to the desktop directory
 ttrim video.mp4 -e 50% -o /Users/dylan/Desktop
 
-# Units can be mixed
+# Units can be mixed, it will start at 00:10 and end halfway
 ttrim video.mp4 -s 10 -e 50%
 ```

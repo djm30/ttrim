@@ -9,8 +9,23 @@ cd .\ttrim
 # Build the project
 cargo build --release
 
-# Move the binary to a location of your choice. For example, C:\Program Files
-Move-Item -Path .\target\release\ttrim.exe -Destination "C:\Program Files"
+# Define the installation path
+$installPath = "$env:LOCALAPPDATA\ttrim"
+
+# Create the installation directory if it doesn't exist
+if (!(Test-Path -Path $installPath -PathType Container)) {
+    New-Item -Path $installPath -ItemType Directory
+}
+
+# Move the binary to the installation path
+Move-Item -Path .\target\release\ttrim.exe -Destination $installPath
+
+# Add the installation path to the system PATH if it's not already there
+$oldPath = [System.Environment]::GetEnvironmentVariable('Path', 'User')
+if ($oldPath -notlike "*$installPath*") {
+    $newPath = $oldPath + ";" + $installPath
+    [System.Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
+}
 
 # Go up one level in the directory structure
 cd ..
