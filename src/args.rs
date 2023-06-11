@@ -6,18 +6,21 @@ use std::path;
 
 #[derive(Parser, Debug, Default)]
 #[clap(author = "Dylan Morrison", version)]
-/// ttrim - Trim video files directly in the terminal
+/// ttrim - Trim video files directly in the terminal.
 pub struct Args {
-    /// The video file to be trimmed
+    /// Path to the video file to be trimmed.
     pub target_file: path::PathBuf,
     #[clap(short, long = "start")]
-    /// The desired starting point
+    /// The desired starting point of the trimmed video.
+    /// Can be provided as a timestamp in the format `HH:MM:SS`, `MM:SS`, a percentage `DD%` or as a number of seconds.
     pub start_timestamp: Option<String>,
     #[clap(short, long = "end")]
-    /// The desired end point
+    /// The desired end point of the trimmed video.
+    /// Can be provided as a timestamp in the format `HH:MM:SS`, `MM:SS`, a percentage `DD%` or as a number of seconds.
     pub end_timestamp: Option<String>,
     #[clap(short, long)]
-    /// The output location
+    /// The output location for the trimmed video file.
+    /// If not provided, the trimmed video will be saved in the same directory as the original video. Can be a specific file or a directory in which case a filename will be generated.
     pub output: Option<path::PathBuf>,
 }
 

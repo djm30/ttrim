@@ -20,6 +20,7 @@ curl -sSL https://raw.githubusercontent.com/djm30/ttrim/master/install.sh | sudo
 ```powershell
 Invoke-Expression (curl https://raw.githubusercontent.com/djm30/ttrim/master/install.ps1 -UseBasicParsing).Content
 ```
+*Must be run as an admin*
 
 ## Usage
 
@@ -51,7 +52,7 @@ ttrim video.mp4 --e 45
 # Trim video.mp4 from 00:10:00 to 00:45:00
 ttrim video.mp4 --start 00:10:00 --end 00:45:00
 
-# Trim video.mp4 from 00:10:00 to 00:45:00 and output to /path/to/output.mp4 - inputting the number of hours is not required
+# Trim video.mp4 from 00:10:00 to 00:45:00 and output to /path/to/output.mp4
 ttrim video.mp4 --start 10:00 --end 45:00 --output /path/to/output.mp4
 
 # Trim video.mp4 to halfway through and save output to the desktop directory
