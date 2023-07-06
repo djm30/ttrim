@@ -10,10 +10,13 @@ use error::Error;
 use timestamp::Timestamp;
 use video_utils::PathType;
 
-// TODO:
-// - Build and make some sort of install script to install the binary to /usr/local/bin or whereever it is on windows
-// - Write a README.md
-fn main() -> Result<(), Error> {
+fn main() {
+    if let Err(err) = trim() {
+        eprintln!("{}", err)
+    }
+}
+
+fn trim() -> Result<(), Error> {
     let args = Args::parse();
 
     let target_file = args.target_file.clone();

@@ -1,16 +1,26 @@
 use crate::error::Error;
 
 use chrono::prelude::*;
+use std::env;
 use std::path::PathBuf;
 use std::process::Command;
 use std::str;
 
 fn check_program_installed(program_name: String) -> bool {
-    Command::new("which")
-        .arg(program_name)
-        .output()
-        .map(|output| output.status.success())
-        .unwrap_or(false)
+    if env::consts::OS == "windows" {
+        Command::new("cmd")
+            .arg("/c")
+            .arg(format!(r#"where "{}""#, program_name))
+            .output()
+            .map(|output| output.status.success())
+            .unwrap_or(false)
+    } else {
+        Command::new("which")
+            .arg(program_name)
+            .output()
+            .map(|output| output.status.success())
+            .unwrap_or(false)
+    }
 }
 
 // Need to make this handle errors
